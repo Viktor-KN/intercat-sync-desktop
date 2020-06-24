@@ -43,8 +43,9 @@ ActivityListModel::ActivityListModel(AccountState *accountState, QObject *parent
 QHash<int, QByteArray> ActivityListModel::roleNames() const
 {
     QHash<int, QByteArray> roles;
-    roles[DisplayPathRole] = "displaypath";
+    roles[DisplayPathRole] = "displayPath";
     roles[PathRole] = "path";
+    roles[AbsolutePathRole] = "absolutePath";
     roles[LinkRole] = "link";
     roles[MessageRole] = "message";
     roles[ActionRole] = "type";
@@ -95,8 +96,7 @@ QVariant ActivityListModel::data(const QModelIndex &index, int role) const
                 relPath.prepend(folder->remotePath());
             list = FolderMan::instance()->findFileInLocalFolders(relPath, ast->account());
             if (list.count() > 0) {
-                QString path = "file:///" + QString(list.at(0));
-                return QUrl(path);
+                return QUrl::fromLocalFile(list.at(0));
             }
             // File does not exist anymore? Let's try to open its path
             if (QFileInfo(relPath).exists()) {
@@ -107,6 +107,25 @@ QVariant ActivityListModel::data(const QModelIndex &index, int role) const
             }
         }
         return QString();
+    case AbsolutePathRole: {
+        const auto folder = FolderMan::instance()->folder(a._folder);
+        QString relPath(a._file);
+        if (!a._file.isEmpty()) {
+            if (folder) {
+                relPath.prepend(folder->remotePath());
+            }
+            list = FolderMan::instance()->findFileInLocalFolders(relPath, ast->account());
+            if (!list.empty()) {
+                return list.at(0);
+            } else {
+                qWarning("File not local folders while processing absolute path request.");
+                return QString();
+            }
+        } else {
+            qWarning("Received an absolute path request for an activity without a file path.");
+            return QString();
+        }
+    }
     case ActionsLinksRole: {
         QList<QVariant> customList;
         foreach (ActivityLink customItem, a._links) {
@@ -221,7 +240,7 @@ void ActivityListModel::startFetchJob()
     if (!_accountState->isConnected()) {
         return;
     }
-    JsonApiJob *job = new JsonApiJob(_accountState->account(), QLatin1String("ocs/v2.php/apps/activity/api/v2/activity"), this);
+    auto *job = new JsonApiJob(_accountState->account(), QLatin1String("ocs/v2.php/apps/activity/api/v2/activity"), this);
     QObject::connect(job, &JsonApiJob::jsonReceived,
         this, &ActivityListModel::slotActivitiesReceived);
 
@@ -271,7 +290,7 @@ void ActivityListModel::slotActivitiesReceived(const QJsonDocument &json, int st
         a._icon = json.value("icon").toString();
 
         if (!a._icon.isEmpty()) {
-            IconJob *iconJob = new IconJob(QUrl(a._icon));
+            auto *iconJob = new IconJob(QUrl(a._icon));
             iconJob->setProperty("activityId", a._id);
             connect(iconJob, &IconJob::jobFinished, this, &ActivityListModel::slotIconDownloaded);
         }

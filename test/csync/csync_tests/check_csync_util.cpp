@@ -23,7 +23,7 @@
 
 static void check_csync_instruction_str(void **state)
 {
-  const char *str;
+  const char *str = nullptr;
 
   (void) state; /* unused */
 
@@ -48,6 +48,6 @@ int torture_run_tests(void)
         cmocka_unit_test(check_csync_memstat),
     };
 
-    return cmocka_run_group_tests(tests, NULL, NULL);
+    return cmocka_run_group_tests(tests, nullptr, nullptr);
 }
 

@@ -7,6 +7,8 @@ QtObject {
     // Colors
     property color ncBlue:      "#0082c9"
     property color ncBlueHover: "#009dd9"
+    property color lightHover:  "#f7f7f7"
+    property color menuBorder:  "#bdbdbd"
 
     // Fonts
     // We are using pixel size because this is cross platform comparable, point size isn't
@@ -33,7 +35,7 @@ QtObject {
 
     property int addAccountButtonHeight: 50
 
-    property int headerButtonIconSize: (trayWindowHeaderHeight / 2.2)
+    property int headerButtonIconSize: 32
 
     property int activityLabelBaseWidth: 240
 

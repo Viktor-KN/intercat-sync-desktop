@@ -50,7 +50,7 @@ static void statedb_create_metadata_table(sqlite3 *db)
                           "contentChecksumTypeId INTEGER,"
                           "PRIMARY KEY(phash));";
 
-        rc = sqlite3_exec(db, sql, NULL, NULL, NULL);
+        rc = sqlite3_exec(db, sql, nullptr, nullptr, nullptr);
         //const char *msg = sqlite3_errmsg(db);
         assert_int_equal( rc, SQLITE_OK );
 
@@ -58,7 +58,7 @@ static void statedb_create_metadata_table(sqlite3 *db)
                         "id INTEGER PRIMARY KEY,"
                         "name TEXT UNIQUE"
                         ");";
-        rc = sqlite3_exec(db, sql, NULL, NULL, NULL);
+        rc = sqlite3_exec(db, sql, nullptr, nullptr, nullptr);
         assert_int_equal( rc, SQLITE_OK );
     }
 }
@@ -82,8 +82,8 @@ static void statedb_insert_metadata(sqlite3 *db)
                                      0,
                                      "4711");
 
-        char *errmsg;
-        rc = sqlite3_exec(db, stmt, NULL, NULL, &errmsg);
+        char *errmsg = nullptr;
+        rc = sqlite3_exec(db, stmt, nullptr, nullptr, &errmsg);
         sqlite3_free(stmt);
         assert_int_equal( rc, SQLITE_OK );
     }
@@ -91,8 +91,8 @@ static void statedb_insert_metadata(sqlite3 *db)
 
 static int setup(void **state)
 {
-    CSYNC *csync;
-    int rc;
+    CSYNC *csync = nullptr;
+    int rc = 0;
 
     unlink(TESTDB);
     rc = system("mkdir -p /tmp/check_csync");
@@ -101,7 +101,7 @@ static int setup(void **state)
     assert_int_equal(rc, 0);
 
     /* Create a new db with metadata */
-    sqlite3 *db;
+    sqlite3 *db = nullptr;
     rc = sqlite3_open(TESTDB, &db);
     statedb_create_metadata_table(db);
     if( firstrun ) {
@@ -120,8 +120,8 @@ static int setup(void **state)
 
 static int setup_ftw(void **state)
 {
-    CSYNC *csync;
-    int rc;
+    CSYNC *csync = nullptr;
+    int rc = 0;
 
     rc = system("mkdir -p /tmp/check_csync");
     assert_int_equal(rc, 0);
@@ -129,8 +129,8 @@ static int setup_ftw(void **state)
     assert_int_equal(rc, 0);
     csync = new CSYNC("/tmp", new OCC::SyncJournalDb(TESTDB));
 
-    sqlite3 *db = NULL;
-    rc = sqlite3_open_v2(TESTDB, &db, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE, NULL);
+    sqlite3 *db = nullptr;
+    rc = sqlite3_open_v2(TESTDB, &db, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE, nullptr);
     assert_int_equal(rc, SQLITE_OK);
     statedb_create_metadata_table(db);
     rc = sqlite3_close(db);
@@ -153,13 +153,13 @@ static int teardown(void **state)
     delete csync;
     delete statedb;
 
-    *state = NULL;
-    
+    *state = nullptr;
+
     return 0;
 }
 
 static int teardown_rm(void **state) {
-    int rc;
+    int rc = 0;
 
     teardown(state);
 
@@ -177,7 +177,7 @@ static std::unique_ptr<csync_file_stat_t> create_fstat(const char *name,
                                            time_t mtime)
 {
     std::unique_ptr<csync_file_stat_t> fs(new csync_file_stat_t);
-    time_t t;
+    time_t t = 0;
 
     if (name && *name) {
         fs->path = name;
@@ -217,9 +217,9 @@ static int failing_fn(CSYNC *ctx,
 static void check_csync_detect_update(void **state)
 {
     CSYNC *csync = (CSYNC*)*state;
-    csync_file_stat_t *st;
+    csync_file_stat_t *st = nullptr;
     std::unique_ptr<csync_file_stat_t> fs;
-    int rc;
+    int rc = 0;
 
     fs = create_fstat("file.txt", 0, 1217597845);
 
@@ -240,9 +240,9 @@ static void check_csync_detect_update(void **state)
 static void check_csync_detect_update_db_none(void **state)
 {
     CSYNC *csync = (CSYNC*)*state;
-    csync_file_stat_t *st;
+    csync_file_stat_t *st = nullptr;
     std::unique_ptr<csync_file_stat_t> fs;
-    int rc;
+    int rc = 0;
 
     fs = create_fstat("file.txt", 0, 1217597845);
 
@@ -261,9 +261,9 @@ static void check_csync_detect_update_db_none(void **state)
 static void check_csync_detect_update_db_eval(void **state)
 {
     CSYNC *csync = (CSYNC*)*state;
-    csync_file_stat_t *st;
+    csync_file_stat_t *st = nullptr;
     std::unique_ptr<csync_file_stat_t> fs;
-    int rc;
+    int rc = 0;
 
     fs = create_fstat("file.txt", 0, 42);
 
@@ -307,9 +307,9 @@ static void check_csync_detect_update_db_rename(void **state)
 static void check_csync_detect_update_db_new(void **state)
 {
     CSYNC *csync = (CSYNC*)*state;
-    csync_file_stat_t *st;
+    csync_file_stat_t *st = nullptr;
     std::unique_ptr<csync_file_stat_t> fs;
-    int rc;
+    int rc = 0;
 
     fs = create_fstat("file.txt", 42000, 0);
 
@@ -328,7 +328,7 @@ static void check_csync_detect_update_db_new(void **state)
 static void check_csync_ftw(void **state)
 {
     CSYNC *csync = (CSYNC*)*state;
-    int rc;
+    int rc = 0;
 
     rc = csync_ftw(csync, "/tmp", csync_walker, MAX_DEPTH);
     assert_int_equal(rc, 0);
@@ -337,7 +337,7 @@ static void check_csync_ftw(void **state)
 static void check_csync_ftw_empty_uri(void **state)
 {
     CSYNC *csync = (CSYNC*)*state;
-    int rc;
+    int rc = 0;
 
     rc = csync_ftw(csync, "", csync_walker, MAX_DEPTH);
     assert_int_equal(rc, -1);
@@ -346,7 +346,7 @@ static void check_csync_ftw_empty_uri(void **state)
 static void check_csync_ftw_failing_fn(void **state)
 {
     CSYNC *csync = (CSYNC*)*state;
-    int rc;
+    int rc = 0;
 
     rc = csync_ftw(csync, "/tmp", failing_fn, MAX_DEPTH);
     assert_int_equal(rc, -1);
@@ -366,5 +366,5 @@ int torture_run_tests(void)
         cmocka_unit_test_setup_teardown(check_csync_ftw_failing_fn, setup_ftw, teardown_rm),
     };
 
-    return cmocka_run_group_tests(tests, NULL, NULL);
+    return cmocka_run_group_tests(tests, nullptr, nullptr);
 }

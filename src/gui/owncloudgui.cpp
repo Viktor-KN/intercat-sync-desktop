@@ -90,6 +90,11 @@ ownCloudGui::ownCloudGui(Application *parent)
     connect(_tray.data(), &Systray::shutdown,
         this, &ownCloudGui::slotShutdown);
 
+    connect(_tray.data(), &Systray::openShareDialog,
+        this, [=](const QString &sharePath, const QString &localPath) {
+                slotShowShareDialog(sharePath, localPath, ShareDialogStartPage::UsersAndGroups);
+            });
+
     ProgressDispatcher *pd = ProgressDispatcher::instance();
     connect(pd, &ProgressDispatcher::progressInfo, this,
         &ownCloudGui::slotUpdateProgress);
@@ -104,7 +109,6 @@ ownCloudGui::ownCloudGui(Application *parent)
         this, &ownCloudGui::slotShowOptionalTrayMessage);
     connect(Logger::instance(), &Logger::guiMessage,
         this, &ownCloudGui::slotShowGuiMessage);
-
 }
 
 void ownCloudGui::createTray()
@@ -150,11 +154,16 @@ void ownCloudGui::slotOpenSettingsDialog()
     }
 }
 
+void ownCloudGui::slotOpenMainDialog()
+{
+    if (!_tray->isOpen()) {
+        _tray->showWindow();
+    }
+}
+
 void ownCloudGui::slotTrayClicked(QSystemTrayIcon::ActivationReason reason)
 {
-
-    // Left click
-    if (reason == QSystemTrayIcon::Trigger) {
+    if (reason == QSystemTrayIcon::Trigger || reason == QSystemTrayIcon::Context) {
         if (OwncloudSetupWizard::bringWizardToFrontIfVisible()) {
             // brought wizard to front
         } else if (_shareDialogs.size() > 0) {
@@ -443,7 +452,7 @@ void ownCloudGui::slotUpdateProgress(const QString &folder, const ProgressInfo &
         QString kindStr = Progress::asResultString(progress._lastCompletedItem);
         QString timeStr = QTime::currentTime().toString("hh:mm");
         QString actionText = tr("%1 (%2, %3)").arg(progress._lastCompletedItem._file, kindStr, timeStr);
-        QAction *action = new QAction(actionText, this);
+        auto *action = new QAction(actionText, this);
         Folder *f = FolderMan::instance()->folder(folder);
         if (f) {
             QString fullPath = f->path() + '/' + progress._lastCompletedItem._file;
@@ -523,7 +532,7 @@ void ownCloudGui::setPauseOnAllFoldersHelper(bool pause)
 
 void ownCloudGui::slotShowGuiMessage(const QString &title, const QString &message)
 {
-    QMessageBox *msgBox = new QMessageBox;
+    auto *msgBox = new QMessageBox;
     msgBox->setWindowFlags(msgBox->windowFlags() | Qt::WindowStaysOnTopHint);
     msgBox->setAttribute(Qt::WA_DeleteOnClose);
     msgBox->setText(message);
@@ -596,7 +605,7 @@ void ownCloudGui::slotHelp()
 
 void ownCloudGui::raiseDialog(QWidget *raiseWidget)
 {
-    if (raiseWidget && raiseWidget->parentWidget() == nullptr) {
+    if (raiseWidget && !raiseWidget->parentWidget()) {
         // Qt has a bug which causes parent-less dialogs to pop-under.
         raiseWidget->showNormal();
         raiseWidget->raise();

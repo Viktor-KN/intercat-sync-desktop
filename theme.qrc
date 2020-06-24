@@ -153,6 +153,7 @@
         <file>theme/change.svg</file>
         <file>theme/lock-http.svg</file>
         <file>theme/lock-https.svg</file>
+        <file>theme/lock-broken.svg</file>
         <file>theme/network.svg</file>
         <file>theme/account.svg</file>
         <file>theme/colored/add.svg</file>
@@ -160,5 +161,6 @@
         <file>theme/colored/Nextcloud-icon.svg</file>
         <file>theme/colored/Nextcloud-sidebar.svg</file>
         <file>theme/add.svg</file>
+        <file>theme/share.svg</file>
     </qresource>
 </RCC>

@@ -91,7 +91,7 @@ QSize FolderStatusDelegate::sizeHint(const QStyleOptionViewItem &option,
         h += margin + 2 * margin + errMsgs.count() * fm.height();
     }
 
-    return QSize(0, h);
+    return {0, h};
 }
 
 int FolderStatusDelegate::rootFolderHeightWithoutErrors(const QFontMetrics &fm, const QFontMetrics &aliasFm)
@@ -372,8 +372,8 @@ bool FolderStatusDelegate::editorEvent(QEvent *event, QAbstractItemModel *model,
     switch (event->type()) {
     case QEvent::MouseButtonPress:
     case QEvent::MouseMove:
-        if (const QAbstractItemView *view = qobject_cast<const QAbstractItemView *>(option.widget)) {
-            QMouseEvent *me = static_cast<QMouseEvent *>(event);
+        if (const auto *view = qobject_cast<const QAbstractItemView *>(option.widget)) {
+            auto *me = static_cast<QMouseEvent *>(event);
             QModelIndex index;
             if (me->buttons()) {
                 index = view->indexAt(me->pos());

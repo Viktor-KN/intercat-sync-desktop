@@ -47,11 +47,8 @@ FolderMan *FolderMan::_instance = nullptr;
 
 FolderMan::FolderMan(QObject *parent)
     : QObject(parent)
-    , _currentSyncFolder(nullptr)
-    , _syncEnabled(true)
     , _lockWatcher(new LockWatcher)
     , _navigationPaneHelper(this)
-    , _appRestartRequired(false)
 {
     ASSERT(!_instance);
     _instance = this;
@@ -463,7 +460,7 @@ void FolderMan::slotFolderSyncPaused(Folder *f, bool paused)
 
 void FolderMan::slotFolderCanSyncChanged()
 {
-    Folder *f = qobject_cast<Folder *>(sender());
+    auto *f = qobject_cast<Folder *>(sender());
      ASSERT(f);
     if (f->canSync()) {
         _socketApi->slotRegisterPath(f->alias());
@@ -596,7 +593,7 @@ void FolderMan::slotRunOneEtagJob()
             //qCDebug(lcFolderMan) << "No more remote ETag check jobs to schedule.";
 
             /* now it might be a good time to check for restarting... */
-            if (_currentSyncFolder == nullptr && _appRestartRequired) {
+            if (!_currentSyncFolder && _appRestartRequired) {
                 restartApplication();
             }
         } else {
@@ -608,7 +605,7 @@ void FolderMan::slotRunOneEtagJob()
 
 void FolderMan::slotAccountStateChanged()
 {
-    AccountState *accountState = qobject_cast<AccountState *>(sender());
+    auto *accountState = qobject_cast<AccountState *>(sender());
     if (!accountState) {
         return;
     }
@@ -790,7 +787,7 @@ void FolderMan::slotRemoveFoldersForAccount(AccountState *accountState)
 
 void FolderMan::slotForwardFolderSyncStateChange()
 {
-    if (Folder *f = qobject_cast<Folder *>(sender())) {
+    if (auto *f = qobject_cast<Folder *>(sender())) {
         emit folderSyncStateChange(f);
     }
 }
@@ -976,7 +973,7 @@ QStringList FolderMan::findFileInLocalFolders(const QString &relPath, const Acco
     QStringList re;
 
     foreach (Folder *folder, this->map().values()) {
-        if (acc != nullptr && folder->accountState()->account() != acc) {
+        if (acc && folder->accountState()->account() != acc) {
             continue;
         }
         QString path = folder->cleanPath();
@@ -1378,7 +1375,7 @@ QString FolderMan::checkPathValidityForNewFolder(const QString &path, const QUrl
 
     const QString userDir = QDir::cleanPath(canonicalPath(path)) + '/';
     for (auto i = _folderMap.constBegin(); i != _folderMap.constEnd(); ++i) {
-        Folder *f = static_cast<Folder *>(i.value());
+        auto *f = static_cast<Folder *>(i.value());
         QString folderDir = QDir::cleanPath(canonicalPath(f->path())) + '/';
 
         bool differentPaths = QString::compare(folderDir, userDir, cs) != 0;

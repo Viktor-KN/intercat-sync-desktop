@@ -39,16 +39,10 @@ namespace OCC {
 
 OwncloudSetupPage::OwncloudSetupPage(QWidget *parent)
     : QWizardPage()
-    , _ui()
-    , _oCUrl()
-    , _ocUser()
-    , _authTypeKnown(false)
-    , _checking(false)
-    , _authType(DetermineAuthTypeJob::Basic)
     , _progressIndi(new QProgressIndicator(this))
+    , _ocWizard(qobject_cast<OwncloudWizard *>(parent))
 {
     _ui.setupUi(this);
-    _ocWizard = qobject_cast<OwncloudWizard *>(parent);
 
     Theme *theme = Theme::instance();
     setTitle(WizardCommon::titleTemplate().arg(tr("Connect to %1").arg(theme->appNameGUI())));
@@ -133,7 +127,7 @@ void OwncloudSetupPage::slotLogin()
 {
     _ocWizard->setRegistration(false);
     _ui.login->setMaximumHeight(0);
-    QPropertyAnimation *animation = new QPropertyAnimation(_ui.login, "maximumHeight");
+    auto *animation = new QPropertyAnimation(_ui.login, "maximumHeight");
     animation->setDuration(0);
     animation->setStartValue(500);
     animation->setEndValue(500);
@@ -210,7 +204,7 @@ void OwncloudSetupPage::initializePage()
     _checking = false;
 
     QAbstractButton *nextButton = wizard()->button(QWizard::NextButton);
-    QPushButton *pushButton = qobject_cast<QPushButton *>(nextButton);
+    auto *pushButton = qobject_cast<QPushButton *>(nextButton);
     if (pushButton)
         pushButton->setDefault(true);
 
@@ -416,9 +410,7 @@ void OwncloudSetupPage::slotCertificateAccepted()
     }
 }
 
-OwncloudSetupPage::~OwncloudSetupPage()
-{
-}
+OwncloudSetupPage::~OwncloudSetupPage() = default;
 
 void OwncloudSetupPage::slotStyleChanged()
 {

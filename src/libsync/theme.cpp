@@ -50,9 +50,7 @@ Theme *Theme::instance()
     return _instance;
 }
 
-Theme::~Theme()
-{
-}
+Theme::~Theme() = default;
 
 QString Theme::statusHeaderText(SyncResult::Status status) const
 {
@@ -206,7 +204,6 @@ QString Theme::hidpiFileName(const QString &fileName, QPaintDevice *dev)
 
 Theme::Theme()
     : QObject(nullptr)
-    , _mono(false)
 {
 }
 
@@ -449,12 +446,12 @@ QIcon Theme::folderOfflineIcon(bool sysTray) const
 
 QColor Theme::wizardHeaderTitleColor() const
 {
-    return QColor(APPLICATION_WIZARD_HEADER_TITLE_COLOR);
+    return {APPLICATION_WIZARD_HEADER_TITLE_COLOR};
 }
 
 QColor Theme::wizardHeaderBackgroundColor() const
 {
-    return QColor(APPLICATION_WIZARD_HEADER_BACKGROUND_COLOR);
+    return {APPLICATION_WIZARD_HEADER_BACKGROUND_COLOR};
 }
 
 QPixmap Theme::wizardHeaderLogo() const
@@ -568,7 +565,10 @@ QString Theme::versionSwitchOutput() const
     stream << "Git revision " << GIT_SHA1 << endl;
 #endif
     stream << "Using Qt " << qVersion() << ", built against Qt " << QT_VERSION_STR << endl;
-    stream << "Using Qt platform plugin '" << QGuiApplication::platformName() << "'" << endl;
+
+    if(!QGuiApplication::platformName().isEmpty())
+        stream << "Using Qt platform plugin '" << QGuiApplication::platformName() << "'" << endl;
+
     stream << "Using '" << QSslSocket::sslLibraryVersionString() << "'" << endl;
     stream << "Running on " << Utility::platformName() << ", " << QSysInfo::currentCpuArchitecture() << endl;
     return helpText;
@@ -583,7 +583,7 @@ bool Theme::isDarkColor(const QColor &color)
 
 QColor Theme::getBackgroundAwareLinkColor(const QColor &backgroundColor)
 {
-    return QColor((isDarkColor(backgroundColor) ? QColor("#6193dc") : QGuiApplication::palette().color(QPalette::Link)));
+    return {(isDarkColor(backgroundColor) ? QColor("#6193dc") : QGuiApplication::palette().color(QPalette::Link))};
 }
 
 QColor Theme::getBackgroundAwareLinkColor()

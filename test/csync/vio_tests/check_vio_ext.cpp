@@ -76,7 +76,7 @@ static int wipe_testdir()
 }
 
 static int setup_testenv(void **state) {
-    int rc;
+    int rc = 0;
 
     rc = wipe_testdir();
     assert_int_equal(rc, 0);
@@ -95,7 +95,7 @@ static int setup_testenv(void **state) {
 
     /* --- initialize csync */
     statevar *mystate = (statevar*)malloc( sizeof(statevar) );
-    mystate->result = NULL;
+    mystate->result = nullptr;
 
     mystate->csync = new CSYNC("/tmp/check_csync1", new OCC::SyncJournalDb(""));
 
@@ -120,7 +120,7 @@ static void output( const char *text )
 static int teardown(void **state) {
     statevar *sv = (statevar*) *state;
     CSYNC *csync = sv->csync;
-    int rc;
+    int rc = 0;
 
     output("================== Tearing down!\n");
 
@@ -134,7 +134,7 @@ static int teardown(void **state) {
     rc = wipe_testdir();
     assert_int_equal(rc, 0);
 
-    *state = NULL;
+    *state = nullptr;
     return 0;
 }
 
@@ -143,7 +143,7 @@ static int teardown(void **state) {
  */
 static void create_dirs( const char *path )
 {
-  int rc;
+  int rc = 0;
   char *mypath = (char*)c_malloc( 2+strlen(CSYNC_TEST_DIR)+strlen(path));
   *mypath = '\0';
   strcat(mypath, CSYNC_TEST_DIR);
@@ -185,14 +185,14 @@ static void create_dirs( const char *path )
  */
 static void traverse_dir(void **state, const char *dir, int *cnt)
 {
-    csync_vio_handle_t *dh;
+    csync_vio_handle_t *dh = nullptr;
     std::unique_ptr<csync_file_stat_t> dirent;
     statevar *sv = (statevar*) *state;
     CSYNC *csync = sv->csync;
-    char *subdir;
-    char *subdir_out;
-    int rc;
-    int is_dir;
+    char *subdir = nullptr;
+    char *subdir_out = nullptr;
+    int rc = 0;
+    int is_dir = 0;
 
     /* Format: Smuggle in the C: for unix platforms as its urgently needed
      * on Windows and the test can be nicely cross platform this way. */
@@ -277,7 +277,7 @@ static void create_file( const char *path, const char *name, const char *content
   assert_int_equal( 0, hFile==INVALID_HANDLE_VALUE );
 
   int len = strlen(content);
-  mbchar_t *dst = NULL;
+  mbchar_t *dst = nullptr;
 
   dst = c_utf8_string_to_locale(content);
   WriteFile(hFile, dst, len * sizeof(mbchar_t), &dwWritten, 0);
@@ -292,7 +292,7 @@ static void create_file( const char *path, const char *name, const char *content
    strcpy(filepath, path);
    strcat(filepath, name);
 
-   FILE *sink;
+   FILE *sink = nullptr;
    sink = fopen(filepath,"w");
 
    fprintf (sink, "we got: %s",content);
@@ -462,5 +462,5 @@ int torture_run_tests(void)
         cmocka_unit_test_setup_teardown(check_readdir_bigunicode, setup_testenv, teardown),
     };
 
-    return cmocka_run_group_tests(tests, NULL, NULL);
+    return cmocka_run_group_tests(tests, nullptr, nullptr);
 }

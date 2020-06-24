@@ -4,10 +4,7 @@ endif()
 
 set(synclib_NAME ${APPLICATION_EXECUTABLE}sync)
 
-find_package(Qt5 5.6 COMPONENTS Core Network Xml Concurrent WebEngineWidgets WebEngine REQUIRED)
-if (Qt5Core_VERSION VERSION_LESS 5.9.0)
-message(STATUS "For HTTP/2 support, compile with Qt 5.9 or higher.")
-endif()
+find_package(Qt5 5.12 COMPONENTS Core Network Xml Concurrent WebEngineWidgets WebEngine REQUIRED)
 
 if(NOT TOKEN_AUTH_ONLY)
     find_package(Qt5Keychain REQUIRED)
@@ -54,8 +51,8 @@ set(QML_IMPORT_PATH ${CMAKE_SOURCE_DIR}/theme CACHE STRING "" FORCE)
 add_subdirectory(csync)
 add_subdirectory(libsync)
 if (NOT BUILD_LIBRARIES_ONLY)
-    add_subdirectory(gui)
     add_subdirectory(cmd)
+    add_subdirectory(gui)
 
     if (WITH_CRASHREPORTER)
         add_subdirectory(3rdparty/libcrashreporter-qt)

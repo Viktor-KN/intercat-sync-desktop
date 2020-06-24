@@ -177,7 +177,7 @@ SocketApi::SocketApi(QObject *parent)
     QString socketPath;
 
     if (Utility::isWindows()) {
-        socketPath = QLatin1String("\\\\.\\pipe\\")
+        socketPath = QLatin1String(R"(\\.\pipe\)")
             + QLatin1String("ownCloud-")
             + QString::fromLocal8Bit(qgetenv("USERNAME"));
         // TODO: once the windows extension supports multiple
@@ -271,13 +271,13 @@ void SocketApi::onLostConnection()
 
 void SocketApi::slotSocketDestroyed(QObject *obj)
 {
-    QIODevice *socket = static_cast<QIODevice *>(obj);
+    auto *socket = static_cast<QIODevice *>(obj);
     _listeners.erase(std::remove_if(_listeners.begin(), _listeners.end(), ListenerHasSocketPred(socket)), _listeners.end());
 }
 
 void SocketApi::slotReadSocket()
 {
-    QIODevice *socket = qobject_cast<QIODevice *>(sender());
+    auto *socket = qobject_cast<QIODevice *>(sender());
     ASSERT(socket);
     SocketListener *listener = &*std::find_if(_listeners.begin(), _listeners.end(), ListenerHasSocketPred(socket));
 
@@ -482,7 +482,7 @@ void SocketApi::command_EDIT(const QString &localFile, SocketListener *listener)
     if (!editor)
         return;
 
-    JsonApiJob *job = new JsonApiJob(fileData.folder->accountState()->account(), QLatin1String("ocs/v2.php/apps/files/api/v1/directEditing/open"), this);
+    auto *job = new JsonApiJob(fileData.folder->accountState()->account(), QLatin1String("ocs/v2.php/apps/files/api/v1/directEditing/open"), this);
 
     QUrlQuery params;
     params.addQueryItem("path", fileData.accountRelativePath);
@@ -558,7 +558,7 @@ private slots:
     }
 
     void passwordRequired() {
-        bool ok;
+        bool ok = false;
         QString password = QInputDialog::getText(nullptr,
                                                  tr("Password for share required"),
                                                  tr("Please enter a password for your link share:"),
@@ -799,7 +799,6 @@ void SocketApi::command_GET_MENU_ITEMS(const QString &argument, OCC::SocketListe
     FileData fileData = hasSeveralFiles ? FileData{} : FileData::get(argument);
     bool isOnTheServer = fileData.journalRecord().isValid();
     auto flagString = isOnTheServer ? QLatin1String("::") : QLatin1String(":d:");
-    auto capabilities = fileData.folder->accountState()->account()->capabilities();
 
     if (fileData.folder && fileData.folder->accountState()->isConnected()) {
         DirectEditor* editor = getDirectEditorForLocalFile(fileData.localPath);

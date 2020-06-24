@@ -42,6 +42,9 @@ User::User(AccountStatePtr &account, const bool &isCurrent, QObject *parent)
             [=]() { if (isConnected()) {slotRefresh();} });
     connect(_account.data(), &AccountState::hasFetchedNavigationApps,
         this, &User::slotRebuildNavigationAppList);
+    connect(_account->account().data(), &Account::accountChangedDisplayName, this, &User::nameChanged);
+
+    connect(FolderMan::instance(), &FolderMan::folderListChanged, this, &User::hasLocalFolderChanged);
 }
 
 void User::slotBuildNotificationDisplay(const ActivityList &list)
@@ -137,7 +140,7 @@ void User::slotRefreshNotifications()
     // start a server notification handler if no notification requests
     // are running
     if (_notificationRequestsRunning == 0) {
-        ServerNotificationHandler *snh = new ServerNotificationHandler(_account.data());
+        auto *snh = new ServerNotificationHandler(_account.data());
         connect(snh, &ServerNotificationHandler::newNotificationList,
             this, &User::slotBuildNotificationDisplay);
 
@@ -149,6 +152,7 @@ void User::slotRefreshNotifications()
 
 void User::slotRebuildNavigationAppList()
 {
+    emit serverHasTalkChanged();
     // Rebuild App list
     UserAppsModel::instance()->buildAppList();
 }
@@ -185,7 +189,7 @@ void User::slotSendNotificationRequest(const QString &accountName, const QString
     if (validVerbs.contains(verb)) {
         AccountStatePtr acc = AccountManager::instance()->account(accountName);
         if (acc) {
-            NotificationConfirmJob *job = new NotificationConfirmJob(acc->account());
+            auto *job = new NotificationConfirmJob(acc->account());
             QUrl l(link);
             job->setLinkAndVerb(l, verb);
             job->setProperty("activityRow", QVariant::fromValue(row));
@@ -206,7 +210,7 @@ void User::slotSendNotificationRequest(const QString &accountName, const QString
 
 void User::slotNotifyNetworkError(QNetworkReply *reply)
 {
-    NotificationConfirmJob *job = qobject_cast<NotificationConfirmJob *>(sender());
+    auto *job = qobject_cast<NotificationConfirmJob *>(sender());
     if (!job) {
         return;
     }
@@ -219,7 +223,7 @@ void User::slotNotifyNetworkError(QNetworkReply *reply)
 
 void User::slotNotifyServerFinished(const QString &reply, int replyCode)
 {
-    NotificationConfirmJob *job = qobject_cast<NotificationConfirmJob *>(sender());
+    auto *job = qobject_cast<NotificationConfirmJob *>(sender());
     if (!job) {
         return;
     }
@@ -399,7 +403,7 @@ void User::setCurrentUser(const bool &isCurrent)
     _isCurrentUser = isCurrent;
 }
 
-Folder *User::getFolder()
+Folder *User::getFolder() const
 {
     foreach (Folder *folder, FolderMan::instance()->map()) {
         if (folder->accountState() == _account.data()) {
@@ -417,12 +421,11 @@ ActivityListModel *User::getActivityModel()
 
 void User::openLocalFolder()
 {
-#ifdef Q_OS_WIN
-    QString path = "file:///" + this->getFolder()->path();
-#else
-    QString path = "file://" + this->getFolder()->path();
-#endif
-    QDesktopServices::openUrl(path);
+    const auto folder = getFolder();
+
+    if (folder) {
+        QDesktopServices::openUrl(QUrl::fromLocalFile(folder->path()));
+    }
 }
 
 void User::login() const
@@ -473,6 +476,11 @@ QImage User::avatar(bool whiteBg) const
     }
 }
 
+bool User::hasLocalFolder() const
+{
+    return getFolder() != nullptr;
+}
+
 bool User::serverHasTalk() const
 {
     return _account->hasTalk();
@@ -510,7 +518,7 @@ UserModel *UserModel::_instance = nullptr;
 
 UserModel *UserModel::instance()
 {
-    if (_instance == nullptr) {
+    if (!_instance) {
         _instance = new UserModel();
     }
     return _instance;
@@ -518,7 +526,6 @@ UserModel *UserModel::instance()
 
 UserModel::UserModel(QObject *parent)
     : QAbstractListModel(parent)
-    , _currentUserId()
 {
     // TODO: Remember selected user from last quit via settings file
     if (AccountManager::instance()->accounts().size() > 0) {
@@ -546,7 +553,7 @@ Q_INVOKABLE int UserModel::numUsers()
     return _users.size();
 }
 
-Q_INVOKABLE int UserModel::currentUserId()
+Q_INVOKABLE int UserModel::currentUserId() const
 {
     return _currentUserId;
 }
@@ -579,15 +586,6 @@ Q_INVOKABLE QImage UserModel::currentUserAvatar()
 QImage UserModel::avatarById(const int &id)
 {
     return _users[id]->avatar(true);
-}
-
-Q_INVOKABLE QString UserModel::currentUserName()
-{
-    if (_users.count() >= 1) {
-        return _users[_currentUserId]->name();
-    } else {
-        return QString("No users");
-    }
 }
 
 Q_INVOKABLE QString UserModel::currentUserServer()
@@ -765,6 +763,11 @@ bool UserModel::currentUserHasActivities()
     return _users[currentUserIndex()]->hasActivities();
 }
 
+bool UserModel::currentUserHasLocalFolder()
+{
+    return _users[currentUserIndex()]->getFolder() != nullptr;
+}
+
 void UserModel::fetchCurrentActivityModel()
 {
     _users[currentUserId()]->slotRefresh();
@@ -777,6 +780,11 @@ AccountAppList UserModel::appList() const
     } else {
         return AccountAppList();
     }
+}
+
+User *UserModel::currentUser() const
+{
+    return _users[currentUserId()];
 }
 
 /*-------------------------------------------------------------------------------------*/
@@ -805,7 +813,7 @@ UserAppsModel *UserAppsModel::_instance = nullptr;
 
 UserAppsModel *UserAppsModel::instance()
 {
-    if (_instance == nullptr) {
+    if (!_instance) {
         _instance = new UserAppsModel();
     }
     return _instance;

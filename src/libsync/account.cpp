@@ -29,6 +29,7 @@
 #include <QNetworkAccessManager>
 #include <QSslSocket>
 #include <QNetworkCookieJar>
+#include <QNetworkProxy>
 
 #include <QFileInfo>
 #include <QDir>
@@ -75,9 +76,7 @@ ClientSideEncryption* Account::e2e()
     return &_e2e;
 }
 
-Account::~Account()
-{
-}
+Account::~Account() = default;
 
 QString Account::davPath() const
 {
@@ -163,9 +162,14 @@ void Account::setCredentials(AbstractCredentials *cred)
 {
     // set active credential manager
     QNetworkCookieJar *jar = nullptr;
+    QNetworkProxy proxy;
+
     if (_am) {
         jar = _am->cookieJar();
         jar->setParent(nullptr);
+
+        // Remember proxy (issue #2108)
+        proxy = _am->proxy();
 
         _am = QSharedPointer<QNetworkAccessManager>();
     }
@@ -182,6 +186,9 @@ void Account::setCredentials(AbstractCredentials *cred)
 
     if (jar) {
         _am->setCookieJar(jar);
+    }
+    if (proxy.type() != QNetworkProxy::DefaultProxy) {
+        _am->setProxy(proxy);
     }
     connect(_am.data(), SIGNAL(sslErrors(QNetworkReply *, QList<QSslError>)),
         SLOT(slotHandleSslErrors(QNetworkReply *, QList<QSslError>)));
@@ -239,12 +246,15 @@ void Account::resetNetworkAccessManager()
 
     qCDebug(lcAccount) << "Resetting QNAM";
     QNetworkCookieJar *jar = _am->cookieJar();
+    QNetworkProxy proxy = _am->proxy();
 
     // Use a QSharedPointer to allow locking the life of the QNAM on the stack.
     // Make it call deleteLater to make sure that we can return to any QNAM stack frames safely.
     _am = QSharedPointer<QNetworkAccessManager>(_credentials->createQNAM(), &QObject::deleteLater);
 
     _am->setCookieJar(jar); // takes ownership of the old cookie jar
+    _am->setProxy(proxy);   // Remember proxy (issue #2108)
+
     connect(_am.data(), SIGNAL(sslErrors(QNetworkReply *, QList<QSslError>)),
         SLOT(slotHandleSslErrors(QNetworkReply *, QList<QSslError>)));
     connect(_am.data(), &QNetworkAccessManager::proxyAuthenticationRequired,
@@ -534,12 +544,12 @@ void Account::writeAppPasswordOnce(QString appPassword){
                 id()
     );
 
-    WritePasswordJob *job = new WritePasswordJob(Theme::instance()->appName());
+    auto *job = new WritePasswordJob(Theme::instance()->appName());
     job->setInsecureFallback(false);
     job->setKey(kck);
     job->setBinaryData(appPassword.toLatin1());
     connect(job, &WritePasswordJob::finished, [this](Job *incoming) {
-        WritePasswordJob *writeJob = static_cast<WritePasswordJob *>(incoming);
+        auto *writeJob = static_cast<WritePasswordJob *>(incoming);
         if (writeJob->error() == NoError)
             qCInfo(lcAccount) << "appPassword stored in keychain";
         else
@@ -558,11 +568,11 @@ void Account::retrieveAppPassword(){
                 id()
     );
 
-    ReadPasswordJob *job = new ReadPasswordJob(Theme::instance()->appName());
+    auto *job = new ReadPasswordJob(Theme::instance()->appName());
     job->setInsecureFallback(false);
     job->setKey(kck);
     connect(job, &ReadPasswordJob::finished, [this](Job *incoming) {
-        ReadPasswordJob *readJob = static_cast<ReadPasswordJob *>(incoming);
+        auto *readJob = static_cast<ReadPasswordJob *>(incoming);
         QString pwd("");
         // Error or no valid public key error out
         if (readJob->error() == NoError &&
@@ -587,11 +597,11 @@ void Account::deleteAppPassword(){
         return;
     }
 
-    DeletePasswordJob *job = new DeletePasswordJob(Theme::instance()->appName());
+    auto *job = new DeletePasswordJob(Theme::instance()->appName());
     job->setInsecureFallback(false);
     job->setKey(kck);
     connect(job, &DeletePasswordJob::finished, [this](Job *incoming) {
-        DeletePasswordJob *deleteJob = static_cast<DeletePasswordJob *>(incoming);
+        auto *deleteJob = static_cast<DeletePasswordJob *>(incoming);
         if (deleteJob->error() == NoError)
             qCInfo(lcAccount) << "appPassword deleted from keychain";
         else
@@ -612,7 +622,7 @@ void Account::fetchDirectEditors(const QUrl &directEditingURL, const QString &di
     if (!directEditingURL.isEmpty() &&
         (directEditingETag.isEmpty() || directEditingETag != _lastDirectEditingETag)) {
             // Fetch the available editors and their mime types
-            JsonApiJob *job = new JsonApiJob(sharedFromThis(), QLatin1String("ocs/v2.php/apps/files/api/v1/directEditing"), this);
+            auto *job = new JsonApiJob(sharedFromThis(), QLatin1String("ocs/v2.php/apps/files/api/v1/directEditing"), this);
             QObject::connect(job, &JsonApiJob::jsonReceived, this, &Account::slotDirectEditingRecieved);
             job->start();
     }
@@ -633,7 +643,7 @@ void Account::slotDirectEditingRecieved(const QJsonDocument &json)
             auto mimeTypes = editor.value("mimetypes").toArray();
             auto optionalMimeTypes = editor.value("optionalMimetypes").toArray();
 
-            DirectEditor *directEditor = new DirectEditor(id, name);
+            auto *directEditor = new DirectEditor(id, name);
 
             foreach(auto mimeType, mimeTypes) {
                 directEditor->addMimetype(mimeType.toString().toLatin1());

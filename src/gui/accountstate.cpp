@@ -57,9 +57,7 @@ AccountState::AccountState(AccountPtr account)
     _timeSinceLastETagCheck.invalidate();
 }
 
-AccountState::~AccountState()
-{
-}
+AccountState::~AccountState() = default;
 
 AccountState *AccountState::loadFromSettings(AccountPtr account, QSettings & /*settings*/)
 {
@@ -236,7 +234,7 @@ void AccountState::checkConnectivity()
         return;
     }
 
-    ConnectionValidator *conValidator = new ConnectionValidator(AccountStatePtr(this));
+    auto *conValidator = new ConnectionValidator(AccountStatePtr(this));
     _connectionValidator = conValidator;
     connect(conValidator, &ConnectionValidator::connectionResult,
         this, &AccountState::slotConnectionValidatorResult);
@@ -419,7 +417,7 @@ std::unique_ptr<QSettings> AccountState::settings()
 }
 
 void AccountState::fetchNavigationApps(){
-    OcsNavigationAppsJob *job = new OcsNavigationAppsJob(_account);
+    auto *job = new OcsNavigationAppsJob(_account);
     job->addRawHeader("If-None-Match", navigationAppsEtagResponseHeader());
     connect(job, &OcsNavigationAppsJob::appsJobFinished, this, &AccountState::slotNavigationAppsFetched);
     connect(job, &OcsNavigationAppsJob::etagResponseHeaderReceived, this, &AccountState::slotEtagResponseHeaderReceived);
@@ -456,7 +454,7 @@ void AccountState::slotNavigationAppsFetched(const QJsonDocument &reply, int sta
                     foreach (const QJsonValue &value, navLinks) {
                         auto navLink = value.toObject();
 
-                        AccountApp *app = new AccountApp(navLink.value("name").toString(), QUrl(navLink.value("href").toString()),
+                        auto *app = new AccountApp(navLink.value("name").toString(), QUrl(navLink.value("href").toString()),
                             navLink.value("id").toString(), QUrl(navLink.value("icon").toString()));
 
                         _apps << app;

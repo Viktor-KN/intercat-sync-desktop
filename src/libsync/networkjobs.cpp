@@ -31,6 +31,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QPainter>
+#include <QPainterPath>
 
 #include "networkjobs.h"
 #include "account.h"
@@ -78,7 +79,7 @@ void RequestEtagJob::start()
                    "    <d:getetag/>\n"
                    "  </d:prop>\n"
                    "</d:propfind>\n");
-    QBuffer *buf = new QBuffer(this);
+    auto *buf = new QBuffer(this);
     buf->setData(xml);
     buf->open(QIODevice::ReadOnly);
     // assumes ownership
@@ -182,9 +183,7 @@ static QString readContentsAsString(QXmlStreamReader &reader)
 }
 
 
-LsColXMLParser::LsColXMLParser()
-{
-}
+LsColXMLParser::LsColXMLParser() = default;
 
 bool LsColXMLParser::parse(const QByteArray &xml, QHash<QString, ExtraFolderInfo> *fileInfo, const QString &expectedPath)
 {
@@ -209,7 +208,9 @@ bool LsColXMLParser::parse(const QByteArray &xml, QHash<QString, ExtraFolderInfo
             if (name == QLatin1String("href")) {
                 // We don't use URL encoding in our request URL (which is the expected path) (QNAM will do it for us)
                 // but the result will have URL encoding..
-                QString hrefString = QString::fromUtf8(QByteArray::fromPercentEncoding(reader.readElementText().toUtf8()));
+                QString hrefString = QUrl::fromLocalFile(QUrl::fromPercentEncoding(reader.readElementText().toUtf8()))
+                        .adjusted(QUrl::NormalizePathSegments)
+                        .path();
                 if (!hrefString.startsWith(expectedPath)) {
                     qCWarning(lcLsColJob) << "Invalid href" << hrefString << "expected starting with" << expectedPath;
                     return false;
@@ -341,7 +342,7 @@ void LsColJob::start()
                    "  <d:prop>\n"
         + propStr + "  </d:prop>\n"
                     "</d:propfind>\n");
-    QBuffer *buf = new QBuffer(this);
+    auto *buf = new QBuffer(this);
     buf->setData(xml);
     buf->open(QIODevice::ReadOnly);
     if (_url.isValid()) {
@@ -563,7 +564,7 @@ void PropfindJob::start()
         + propStr + "  </d:prop>\n"
                     "</d:propfind>\n";
 
-    QBuffer *buf = new QBuffer(this);
+    auto *buf = new QBuffer(this);
     buf->setData(xml);
     buf->open(QIODevice::ReadOnly);
     sendRequest("PROPFIND", makeDavUrl(path()), req, buf);
@@ -725,7 +726,7 @@ void ProppatchJob::start()
         + propStr + "  </d:prop></d:set>\n"
                     "</d:propertyupdate>\n";
 
-    QBuffer *buf = new QBuffer(this);
+    auto *buf = new QBuffer(this);
     buf->setData(xml);
     buf->open(QIODevice::ReadOnly);
     sendRequest("PROPPATCH", makeDavUrl(path()), req, buf);
@@ -830,7 +831,7 @@ bool JsonApiJob::finished()
         qCWarning(lcJsonApiJob) << "Nothing changed so nothing to retrieve - status code: " << httpStatusCode;
         statusCode = httpStatusCode;
     } else {
-        QRegExp rex("\"statuscode\":(\\d+),");
+        QRegExp rex(R"("statuscode":(\d+),)");
         // example: "{"ocs":{"meta":{"status":"ok","statuscode":100,"message":null},"data":{"version":{"major":8,"minor":"... (504)
         if (jsonStr.contains(rex)) {
             statusCode = rex.cap(1).toInt();
@@ -1038,7 +1039,7 @@ void fetchPrivateLinkUrl(AccountPtr account, const QString &remotePath,
         oldUrl = account->deprecatedPrivateLinkUrl(numericFileId).toString(QUrl::FullyEncoded);
 
     // Retrieve the new link by PROPFIND
-    PropfindJob *job = new PropfindJob(account, remotePath, target);
+    auto *job = new PropfindJob(account, remotePath, target);
     job->setProperties(
         QList<QByteArray>()
         << "http://owncloud.org/ns:fileid" // numeric file id for fallback private link generation

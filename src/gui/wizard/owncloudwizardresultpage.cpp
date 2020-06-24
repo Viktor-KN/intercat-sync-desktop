@@ -25,10 +25,6 @@ namespace OCC {
 
 OwncloudWizardResultPage::OwncloudWizardResultPage()
     : QWizardPage()
-    , _localFolder()
-    , _remoteFolder()
-    , _complete(false)
-    , _ui()
 {
     _ui.setupUi(this);
     // no fields to register.
@@ -54,9 +50,7 @@ OwncloudWizardResultPage::OwncloudWizardResultPage()
     setupCustomization();
 }
 
-OwncloudWizardResultPage::~OwncloudWizardResultPage()
-{
-}
+OwncloudWizardResultPage::~OwncloudWizardResultPage() = default;
 
 void OwncloudWizardResultPage::setComplete(bool complete)
 {

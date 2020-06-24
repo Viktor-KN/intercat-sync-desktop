@@ -68,9 +68,9 @@ namespace {
 
     static const char optionsC[] =
         "Options:\n"
-        "  -h --help            : show this help screen.\n"
-        "  --version            : show version information.\n"
-        "  --logwindow          : open a window to show log output.\n"
+        "  --help, -h           : show this help screen.\n"
+        "  --version, -v        : show version information.\n"
+        "  --logwindow, -l      : open a window to show log output.\n"
         "  --logfile <filename> : write log output to file <filename>.\n"
         "  --logdir <name>      : write each sync log output in a new file\n"
         "                         in folder <name>.\n"
@@ -261,7 +261,7 @@ Application::Application(int &argc, char **argv)
 
 #if defined(BUILD_UPDATER)
     // Update checks
-    UpdaterScheduler *updaterScheduler = new UpdaterScheduler(this);
+    auto *updaterScheduler = new UpdaterScheduler(this);
     connect(updaterScheduler, &UpdaterScheduler::updaterAnnouncement,
         _gui.data(), &ownCloudGui::slotShowTrayMessage);
     connect(updaterScheduler, &UpdaterScheduler::requestRestart,
@@ -433,14 +433,14 @@ void Application::slotParseMessage(const QString &msg, QObject *)
         QStringList options = msg.mid(lengthOfMsgPrefix).split(QLatin1Char('|'));
         parseOptions(options);
         setupLogging();
-    } else if (msg.startsWith(QLatin1String("MSG_SHOWSETTINGS"))) {
+    } else if (msg.startsWith(QLatin1String("MSG_SHOWMAINDIALOG"))) {
         qCInfo(lcApplication) << "Running for" << _startedAt.elapsed() / 1000.0 << "sec";
         if (_startedAt.elapsed() < 10 * 1000) {
             // This call is mirrored with the one in int main()
-            qCWarning(lcApplication) << "Ignoring MSG_SHOWSETTINGS, possibly double-invocation of client via session restore and auto start";
+            qCWarning(lcApplication) << "Ignoring MSG_SHOWMAINDIALOG, possibly double-invocation of client via session restore and auto start";
             return;
         }
-        showSettingsDialog();
+        showMainDialog();
     }
 }
 
@@ -495,7 +495,7 @@ void Application::parseOptions(const QStringList &options)
             _debugMode = true;
         } else if (option == QLatin1String("--background")) {
             _backgroundMode = true;
-        } else if (option == QLatin1String("--version")) {
+        } else if (option == QLatin1String("--version") || option == QLatin1String("-v")) {
             _versionOnly = true;
         } else {
             showHint("Unrecognized option '" + option.toStdString() + "'");
@@ -608,9 +608,9 @@ void Application::setupTranslations()
     if (!enforcedLocale.isEmpty())
         uiLanguages.prepend(enforcedLocale);
 
-    QTranslator *translator = new QTranslator(this);
-    QTranslator *qtTranslator = new QTranslator(this);
-    QTranslator *qtkeychainTranslator = new QTranslator(this);
+    auto *translator = new QTranslator(this);
+    auto *qtTranslator = new QTranslator(this);
+    auto *qtkeychainTranslator = new QTranslator(this);
 
     foreach (QString lang, uiLanguages) {
         lang.replace(QLatin1Char('-'), QLatin1Char('_')); // work around QTBUG-25973
@@ -662,9 +662,9 @@ bool Application::versionOnly()
     return _versionOnly;
 }
 
-void Application::showSettingsDialog()
+void Application::showMainDialog()
 {
-    _gui->slotShowSettings();
+    _gui->slotOpenMainDialog();
 }
 
 void Application::slotGuiIsShowingSettings()
